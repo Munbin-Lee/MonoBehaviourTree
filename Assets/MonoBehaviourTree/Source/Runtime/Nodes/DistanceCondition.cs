@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -14,11 +12,11 @@ namespace MBT
         public TransformReference transform1;
         public TransformReference transform2;
 
-        public override bool Check()
+        protected override bool Check()
         {
             // Squared magnitude is enough to compare distances
-            float sqrMagnitude = (transform1.Value.position - transform2.Value.position).sqrMagnitude;
-            float dist = distance.Value;
+            var sqrMagnitude = (transform1.Value.position - transform2.Value.position).sqrMagnitude;
+            var dist = distance.Value;
             if (comparator == Comparator.GreaterThan)
             {
                 return sqrMagnitude > dist * dist;

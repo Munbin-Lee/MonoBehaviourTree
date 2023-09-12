@@ -1,39 +1,39 @@
-﻿using UnityEngine;
-using UnityEditor;
-using System.Collections.Generic;
-using UnityEditor.IMGUI.Controls;
+﻿using System;
 using MBT;
+using UnityEditor;
+using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 
 namespace MBTEditor
-{    
+{
     public class BehaviourTreeWindow : EditorWindow, IHasCustomMenu
     {
+        private readonly Color _editorBackgroundColor = new(0.16f, 0.19f, 0.25f, 1);
+
+        private readonly float _handleDetectionDistance = 8f;
+        private GUIStyle _defaultNodeStyle;
+        private GUIStyle _failureNodeStyle;
+        private GUIStyle _lockButtonStyle;
+        private GUIStyle _nodeBreakpointLabelStyle;
+        private GUIStyle _nodeContentBoxStyle;
+        private GUIStyle _nodeLabelStyle;
+        private GUIStyle _runningNodeStyle;
+        private GUIStyle _selectedNodeStyle;
+        private GUIStyle _successNodeStyle;
+        private NodeHandle currentHandle;
         private MonoBehaviourTree currentMBT;
         private Editor currentMBTEditor;
         private Node[] currentNodes;
-        private Node selectedNode;
-        private bool nodeMoved = false;
-        private Vector2 workspaceOffset;
-        private NodeHandle currentHandle;
         private NodeHandle dropdownHandleCache;
-        private bool snapNodesToGrid;
-        private bool locked = false;
-
-        private Rect nodeFinderActivatorRect;
+        private bool locked;
         private NodeDropdown nodeDropdown;
         private Vector2 nodeDropdownTargetPosition;
 
-        private readonly float _handleDetectionDistance = 8f;
-        private readonly Color _editorBackgroundColor = new Color(0.16f, 0.19f, 0.25f, 1);
-        private GUIStyle _lockButtonStyle;
-        private GUIStyle _defaultNodeStyle;
-        private GUIStyle _selectedNodeStyle;
-        private GUIStyle _successNodeStyle;
-        private GUIStyle _failureNodeStyle;
-        private GUIStyle _runningNodeStyle;
-        private GUIStyle _nodeContentBoxStyle;
-        private GUIStyle _nodeLabelStyle;
-        private GUIStyle _nodeBreakpointLabelStyle;
+        private Rect nodeFinderActivatorRect;
+        private bool nodeMoved;
+        private Node selectedNode;
+        private bool snapNodesToGrid;
+        private Vector2 workspaceOffset;
 
         private void OnEnable()
         {
@@ -47,64 +47,92 @@ namespace MBTEditor
             // Node finder
             nodeDropdown = new NodeDropdown(new AdvancedDropdownState(), AddNode);
             // Standard node
-            _defaultNodeStyle = new GUIStyle();
-            _defaultNodeStyle.border = new RectOffset(10,10,10,10);
-            _defaultNodeStyle.normal.background = Resources.Load("mbt_node_default", typeof(Texture2D)) as Texture2D;
+            _defaultNodeStyle = new GUIStyle
+            {
+                border = new RectOffset(10, 10, 10, 10),
+                normal =
+                {
+                    background = Resources.Load("mbt_node_default", typeof(Texture2D)) as Texture2D
+                }
+            };
             // Selected node
-            _selectedNodeStyle = new GUIStyle();
-            _selectedNodeStyle.border = new RectOffset(10,10,10,10);
-            _selectedNodeStyle.normal.background = Resources.Load("mbt_node_selected", typeof(Texture2D)) as Texture2D;
+            _selectedNodeStyle = new GUIStyle
+            {
+                border = new RectOffset(10, 10, 10, 10),
+                normal =
+                {
+                    background = Resources.Load("mbt_node_selected", typeof(Texture2D)) as Texture2D
+                }
+            };
             // Success node
-            _successNodeStyle = new GUIStyle();
-            _successNodeStyle.border = new RectOffset(10,10,10,10);
-            _successNodeStyle.normal.background = Resources.Load("mbt_node_success", typeof(Texture2D)) as Texture2D;
+            _successNodeStyle = new GUIStyle
+            {
+                border = new RectOffset(10, 10, 10, 10),
+                normal =
+                {
+                    background = Resources.Load("mbt_node_success", typeof(Texture2D)) as Texture2D
+                }
+            };
             // Failure node
-            _failureNodeStyle = new GUIStyle();
-            _failureNodeStyle.border = new RectOffset(10,10,10,10);
-            _failureNodeStyle.normal.background = Resources.Load("mbt_node_failure", typeof(Texture2D)) as Texture2D;
+            _failureNodeStyle = new GUIStyle
+            {
+                border = new RectOffset(10, 10, 10, 10),
+                normal =
+                {
+                    background = Resources.Load("mbt_node_failure", typeof(Texture2D)) as Texture2D
+                }
+            };
             // Running node
-            _runningNodeStyle = new GUIStyle();
-            _runningNodeStyle.border = new RectOffset(10,10,10,10);
-            _runningNodeStyle.normal.background = Resources.Load("mbt_node_running", typeof(Texture2D)) as Texture2D;
+            _runningNodeStyle = new GUIStyle
+            {
+                border = new RectOffset(10, 10, 10, 10),
+                normal =
+                {
+                    background = Resources.Load("mbt_node_running", typeof(Texture2D)) as Texture2D
+                }
+            };
             // Node content box
-            _nodeContentBoxStyle = new GUIStyle();
-            _nodeContentBoxStyle.padding = new RectOffset(0,0,15,15);
+            _nodeContentBoxStyle = new GUIStyle
+            {
+                padding = new RectOffset(0, 0, 15, 15)
+            };
             // Node label
-            _nodeLabelStyle = new GUIStyle();
-            _nodeLabelStyle.normal.textColor = Color.white;
-            _nodeLabelStyle.alignment = TextAnchor.MiddleCenter;
-            _nodeLabelStyle.wordWrap = true;
-            _nodeLabelStyle.margin = new RectOffset(10,10,10,10);
-            _nodeLabelStyle.font = Resources.Load("mbt_Lato-Regular", typeof(Font)) as Font;
-            _nodeLabelStyle.fontSize = 12;
+            _nodeLabelStyle = new GUIStyle
+            {
+                normal =
+                {
+                    textColor = Color.white
+                },
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = true,
+                margin = new RectOffset(10, 10, 10, 10),
+                font = Resources.Load("mbt_Lato-Regular", typeof(Font)) as Font,
+                fontSize = 12
+            };
             // Node label when breakpoint is set to true
-            _nodeBreakpointLabelStyle = new GUIStyle(_nodeLabelStyle);
-            _nodeBreakpointLabelStyle.normal.textColor = new Color(1f, 0.35f, 0.18f);
+            _nodeBreakpointLabelStyle = new GUIStyle(_nodeLabelStyle)
+            {
+                normal =
+                {
+                    textColor = new Color(1f, 0.35f, 0.18f)
+                }
+            };
         }
-    
+
         private void OnDisable()
         {
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= UpdateSelection;
         }
 
-        [MenuItem("Window/Mono Behaviour Tree")]
-        public static void OpenEditor()
-        {
-            BehaviourTreeWindow window = GetWindow<BehaviourTreeWindow>();
-            window.titleContent = new GUIContent(
-                "Behaviour Tree",
-                Resources.Load("mbt_window_icon", typeof(Texture2D)) as Texture2D
-            );
-        }
-
-        void OnGUI()
+        private void OnGUI()
         {
             // Draw grid in background first
             PaintBackground();
 
             // If there is no tree to render just skip rest
-            if (currentMBT == null) {
+            if (currentMBT == null)
+            {
                 // Keep toolbar rendered
                 PaintWindowToolbar();
                 return;
@@ -123,27 +151,80 @@ namespace MBTEditor
             if (GUI.changed) Repaint();
         }
 
+        private void OnFocus()
+        {
+            UpdateSelection();
+            Repaint();
+        }
+
+        private void OnInspectorUpdate()
+        {
+            // OPTIMIZE: This can be optimized to call repaint once per second
+            Repaint();
+        }
+
+        private void OnSelectionChange()
+        {
+            var previous = currentMBT;
+            UpdateSelection();
+            // Reset workspace position only when selection changed
+            if (previous != currentMBT) workspaceOffset = Vector2.zero;
+
+            Repaint();
+        }
+
+        // http://leahayes.co.uk/2013/04/30/adding-the-little-padlock-button-to-your-editorwindow.html
+        private void ShowButton(Rect pos)
+        {
+            // Cache style
+            _lockButtonStyle ??= "IN LockButton";
+            // Generic menu button
+            GUI.enabled = currentMBT != null;
+            locked = GUI.Toggle(pos, locked, GUIContent.none, _lockButtonStyle);
+            GUI.enabled = true;
+        }
+
+        void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
+        {
+            menu.AddItem(new GUIContent("Lock"), locked, () =>
+            {
+                locked = !locked;
+                UpdateSelection();
+            });
+        }
+
+        [MenuItem("Window/Mono Behaviour Tree")]
+        public static void OpenEditor()
+        {
+            var window = GetWindow<BehaviourTreeWindow>();
+            window.titleContent = new GUIContent(
+                "Behaviour Tree",
+                Resources.Load("mbt_window_icon", typeof(Texture2D)) as Texture2D
+            );
+        }
+
         private void PaintConnections(Event e)
         {
             // Paint line when dragging connection
-            if (currentHandle != null) {
+            if (currentHandle != null)
+            {
                 Handles.BeginGUI();
-                Vector3 p1 = new Vector3(currentHandle.position.x, currentHandle.position.y, 0f);
-                Vector3 p2 = new Vector3(e.mousePosition.x, e.mousePosition.y, 0f);
+                var p1 = new Vector3(currentHandle.position.x, currentHandle.position.y, 0f);
+                var p2 = new Vector3(e.mousePosition.x, e.mousePosition.y, 0f);
                 Handles.DrawBezier(p1, p2, p1, p2, new Color(0.3f, 0.36f, 0.5f), null, 4f);
                 Handles.EndGUI();
             }
+
             // Paint all current connections
-            for (int i = 0; i < currentNodes.Length; i++)
+            foreach (var n in currentNodes)
             {
-                Node n = currentNodes[i];
                 Vector3 p1 = GetBottomHandlePosition(n.rect) + workspaceOffset;
-                for (int j = 0; j < n.children.Count; j++)
+                foreach (var t in n.children)
                 {
                     Handles.BeginGUI();
-                    Vector3 p2 = GetTopHandlePosition(n.children[j].rect) + workspaceOffset;
+                    Vector3 p2 = GetTopHandlePosition(t.rect) + workspaceOffset;
                     Handles.DrawBezier(p1, p2, p1, p2, new Color(0.3f, 0.36f, 0.5f), null, 4f);
-                    Handles.EndGUI();   
+                    Handles.EndGUI();
                 }
             }
         }
@@ -151,107 +232,60 @@ namespace MBTEditor
         private void PaintWindowToolbar()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-                EditorGUI.BeginDisabledGroup(currentMBT == null);
-                if (GUILayout.Toggle(snapNodesToGrid, "Snap Nodes", EditorStyles.toolbarButton) != snapNodesToGrid)
-                {
-                    snapNodesToGrid = !snapNodesToGrid;
-                    // Store this setting
-                    EditorPrefs.SetBool("snapNodesToGrid", snapNodesToGrid);
-                }
-                // TODO: Autolayout
-                // if (GUILayout.Button("Auto Layout", EditorStyles.toolbarButton)){
-                //     Debug.Log("Auto layout is not implemented.");
-                // }
-                EditorGUILayout.Space();
-                if (GUILayout.Button("Focus Root", EditorStyles.toolbarButton)){
-                    FocusRoot();
-                }
-                if (GUILayout.Button("Select In Hierarchy", EditorStyles.toolbarButton)){
-                    if (currentMBT != null)
-                    {
-                        Selection.activeGameObject = currentMBT.gameObject;
-                        EditorGUIUtility.PingObject(currentMBT.gameObject);
-                    }
-                }
-                if (GUILayout.Button("Add Node", EditorStyles.toolbarDropDown)){
-                    OpenNodeFinder(nodeFinderActivatorRect, false);
-                }
-                if (Event.current.type == EventType.Repaint) nodeFinderActivatorRect = GUILayoutUtility.GetLastRect();
-                EditorGUI.EndDisabledGroup();
-                GUILayout.FlexibleSpace();
+            EditorGUI.BeginDisabledGroup(currentMBT == null);
+            if (GUILayout.Toggle(snapNodesToGrid, "Snap Nodes", EditorStyles.toolbarButton) != snapNodesToGrid)
+            {
+                snapNodesToGrid = !snapNodesToGrid;
+                // Store this setting
+                EditorPrefs.SetBool("snapNodesToGrid", snapNodesToGrid);
+            }
+
+            // TODO: AutoLayout
+            // if (GUILayout.Button("Auto Layout", EditorStyles.toolbarButton)){
+            //     Debug.Log("Auto layout is not implemented.");
+            // }
+            EditorGUILayout.Space();
+            if (GUILayout.Button("Focus Root", EditorStyles.toolbarButton)) FocusRoot();
+
+            if (GUILayout.Button("Select In Hierarchy", EditorStyles.toolbarButton))
                 if (currentMBT != null)
                 {
-                    GUILayout.Label(string.Format("{0} {1}", currentMBT.name, -workspaceOffset));
+                    var gameObject = currentMBT.gameObject;
+                    Selection.activeGameObject = gameObject;
+                    EditorGUIUtility.PingObject(gameObject);
                 }
+
+            if (GUILayout.Button("Add Node", EditorStyles.toolbarDropDown))
+                OpenNodeFinder(nodeFinderActivatorRect, false);
+
+            if (Event.current.type == EventType.Repaint) nodeFinderActivatorRect = GUILayoutUtility.GetLastRect();
+            EditorGUI.EndDisabledGroup();
+            GUILayout.FlexibleSpace();
+            if (currentMBT != null) GUILayout.Label($"{currentMBT.name} {-workspaceOffset}");
+
             EditorGUILayout.EndHorizontal();
         }
 
-        void FocusRoot()
+        private void FocusRoot()
         {
             Root rootNode = null;
-            for (int i = 0; i < currentNodes.Length; i++)
+            foreach (var t in currentNodes)
             {
-                if (currentNodes[i] is Root) {
-                    rootNode = currentNodes[i] as Root;
-                    break;
-                }
+                if (t is not Root root) continue;
+                rootNode = root;
+                break;
             }
-            if (rootNode != null) {
-                workspaceOffset = -rootNode.rect.center + new Vector2(this.position.width/2, this.position.height/2);
-            }
+
+            if (rootNode != null)
+                workspaceOffset = -rootNode.rect.center + new Vector2(position.width / 2, position.height / 2);
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             // Disable lock when changing state
-            this.locked = false;
+            locked = false;
             UpdateSelection();
             Repaint();
-        }
-
-        void OnInspectorUpdate()
-        {
-            // OPTIMIZE: This can be optimized to call repaint once per second
-            Repaint();
-        }
-
-        void OnSelectionChange() 
-        {
-            MonoBehaviourTree previous = currentMBT;
-            UpdateSelection();
-            // Reset workspace position only when selection changed
-            if (previous != currentMBT)
-            {
-                workspaceOffset = Vector2.zero;
-            }
-            Repaint();
-        }
-
-        void OnFocus() 
-        {
-            UpdateSelection();
-            Repaint();
-        }
-
-        void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
-        {
-            menu.AddItem(new GUIContent("Lock"), this.locked, () => {
-                this.locked = !this.locked;
-                UpdateSelection();
-            });
-        }
-
-        // http://leahayes.co.uk/2013/04/30/adding-the-little-padlock-button-to-your-editorwindow.html
-        private void ShowButton(Rect position)
-        {
-            // Cache style
-            if (_lockButtonStyle == null) {
-                _lockButtonStyle = "IN LockButton";
-            }
-            // Generic menu button
-            GUI.enabled = currentMBT != null;
-            this.locked = GUI.Toggle(position, this.locked, GUIContent.none, _lockButtonStyle);
-            GUI.enabled = true;
         }
 
         // DeselectNode cannot be called here
@@ -262,32 +296,29 @@ namespace MBTEditor
 
         private void UpdateSelection()
         {
-            MonoBehaviourTree prevMBT = currentMBT;
-            if (!this.locked && Selection.activeGameObject != null)
+            var prevMBT = currentMBT;
+            if (!locked && Selection.activeGameObject != null)
             {
                 currentMBT = Selection.activeGameObject.GetComponent<MonoBehaviourTree>();
                 // If new selection is null then restore previous one
-                if (currentMBT == null)
-                {
-                    currentMBT = prevMBT;
-                }
+                if (currentMBT == null) currentMBT = prevMBT;
             }
+
             if (currentMBT != prevMBT)
-            {
                 // Get new editor for new MBT
                 Editor.CreateCachedEditor(currentMBT, null, ref currentMBTEditor);
-            }
-            if (currentMBT != null) {
+
+            if (currentMBT != null)
+            {
                 currentNodes = currentMBT.GetComponents<Node>();
                 // Ensure there is no error when node script is missing
-                for (int i = 0; i < currentNodes.Length; i++)
-                {
-                    currentNodes[i].children.RemoveAll(item => item == null);
-                }
-            } else {
-                currentNodes = new Node[0];
+                foreach (var t in currentNodes) t.children.RemoveAll(item => item == null);
+            }
+            else
+            {
+                currentNodes = Array.Empty<Node>();
                 // Unlock when there is nothing to display
-                this.locked = false;
+                locked = false;
             }
         }
 
@@ -296,90 +327,112 @@ namespace MBTEditor
             switch (e.type)
             {
                 case EventType.MouseDown:
-                    if (e.button == 0) {
+                    if (e.button == 0)
+                    {
                         // Reset flag
                         nodeMoved = false;
-                        // Frist check if any node handle was clicked
-                        NodeHandle handle = FindHandle(e.mousePosition);
+                        // First check if any node handle was clicked
+                        var handle = FindHandle(e.mousePosition);
                         if (handle != null)
                         {
                             currentHandle = handle;
                             e.Use();
                             break;
                         }
-                        Node node = FindNode(e.mousePosition);
+
+                        var node = FindNode(e.mousePosition);
                         // Select node if contains point
-                        if (node != null) {
+                        if (node != null)
+                        {
                             DeselectNode();
                             SelectNode(node);
-                            if (e.clickCount == 2 && node is SubTree) {
-                                SubTree subTree = node as SubTree;
-                                if (subTree.tree != null) {
+                            if (e.clickCount == 2 && node is SubTree subTree)
+                                if (subTree.tree != null)
                                     Selection.activeGameObject = subTree.tree.gameObject;
-                                }
-                            }
-                        } else {
+                        }
+                        else
+                        {
                             DeselectNode();
                         }
+
                         e.Use();
-                    } else if (e.button == 1) {
-                        Node node = FindNode(e.mousePosition);
+                    }
+                    else if (e.button == 1)
+                    {
+                        var node = FindNode(e.mousePosition);
                         // Open proper context menu
-                        if (node != null) {
+                        if (node != null)
+                        {
                             OpenNodeMenu(e.mousePosition, node);
-                        } else {
+                        }
+                        else
+                        {
                             DeselectNode();
                             OpenNodeFinder(new Rect(e.mousePosition.x, e.mousePosition.y, 1, 1));
                         }
+
                         e.Use();
                     }
+
                     break;
                 case EventType.MouseDrag:
                     // Drag node, workspace or connection
-                    if (e.button == 0) {
-                        if (currentHandle != null) {
+                    if (e.button == 0)
+                    {
+                        if (currentHandle != null)
+                        {
                             // Let PaintConnections draw lines
-                        } else if (selectedNode != null) {
+                        }
+                        else if (selectedNode != null)
+                        {
                             Undo.RecordObject(selectedNode, "Move Node");
                             selectedNode.rect.position += Event.current.delta;
                             // Move whole branch when Ctrl is pressed
-                            if (e.control) {
-                                List<Node> movedNodes = selectedNode.GetAllSuccessors();
-                                for (int i = 0; i < movedNodes.Count; i++)
+                            if (e.control)
+                            {
+                                var movedNodes = selectedNode.GetAllSuccessors();
+                                foreach (var t in movedNodes)
                                 {
-                                    Undo.RecordObject(movedNodes[i], "Move Node");
-                                    movedNodes[i].rect.position += Event.current.delta;
+                                    Undo.RecordObject(t, "Move Node");
+                                    t.rect.position += Event.current.delta;
                                 }
                             }
+
                             nodeMoved = true;
-                        } else {
+                        }
+                        else
+                        {
                             workspaceOffset += Event.current.delta;
                         }
+
                         GUI.changed = true;
                         e.Use();
                     }
+
                     break;
                 case EventType.MouseUp:
-                    if (currentHandle != null) {
-                        TryConnectNodes(currentHandle, e.mousePosition);
-                    }
+                    if (currentHandle != null) TryConnectNodes(currentHandle, e.mousePosition);
+
                     // Reorder or snap nodes in case any of them was moved
-                    if (nodeMoved && selectedNode != null) {
+                    if (nodeMoved && selectedNode != null)
+                    {
                         // Snap nodes if option is enabled
                         if (snapNodesToGrid)
                         {
                             Undo.RecordObject(selectedNode, "Move Node");
                             selectedNode.rect.position = SnapPositionToGrid(selectedNode.rect.position);
                             // When control is pressed snap successors too
-                            if (e.control) {
-                                List<Node> movedNodes = selectedNode.GetAllSuccessors();
-                                for (int i = 0; i < movedNodes.Count; i++)
+                            if (e.control)
+                            {
+                                var movedNodes = selectedNode.GetAllSuccessors();
+                                foreach (var t in movedNodes)
                                 {
-                                    Undo.RecordObject(movedNodes[i], "Move Node");
-                                    movedNodes[i].rect.position = SnapPositionToGrid(movedNodes[i].rect.position);
+                                    Undo.RecordObject(t, "Move Node");
+                                    t.rect.position = SnapPositionToGrid(t.rect.position);
                                 }
                             }
                         }
+
                         // Reorder siblings if selected node has parent
                         if (selectedNode.parent != null)
                         {
@@ -387,6 +440,7 @@ namespace MBTEditor
                             selectedNode.parent.SortChildren();
                         }
                     }
+
                     nodeMoved = false;
                     currentHandle = null;
                     GUI.changed = true;
@@ -394,10 +448,10 @@ namespace MBTEditor
             }
         }
 
-        Vector2 SnapPositionToGrid(Vector2 position)
+        private static Vector2 SnapPositionToGrid(Vector2 position)
         {
             return new Vector2(
-                Mathf.Round(position.x / 20f) * 20f, 
+                Mathf.Round(position.x / 20f) * 20f,
                 Mathf.Round(position.y / 20f) * 20f
             );
         }
@@ -405,36 +459,43 @@ namespace MBTEditor
         private void TryConnectNodes(NodeHandle handle, Vector2 mousePosition)
         {
             // Find hovered node and connect or open dropdown
-            Node targetNode = FindNode(mousePosition);
-            if (targetNode == null) {
+            var targetNode = FindNode(mousePosition);
+            if (targetNode == null)
+            {
                 OpenNodeFinder(new Rect(mousePosition.x, mousePosition.y, 1, 1), true, handle);
                 return;
             }
+
             // Check if they are not the same node
-            if (targetNode == handle.node) {
-                return;
-            }
+            if (targetNode == handle.node) return;
+
             Undo.RecordObject(targetNode, "Connect Nodes");
             Undo.RecordObject(handle.node, "Connect Nodes");
-            // There is node, try to connect if this is possible
-            if (handle.type == HandleType.Input && targetNode is IParentNode) {
-                // Do not allow connecting descendants as parents
-                if (targetNode.IsDescendantOf(handle.node)) {
-                    return;
+            switch (handle.type)
+            {
+                // There is node, try to connect if this is possible
+                case HandleType.Input when targetNode is IParentNode:
+                {
+                    // Do not allow connecting descendants as parents
+                    if (targetNode.IsDescendantOf(handle.node)) return;
+
+                    // Then add as child to new parent
+                    targetNode.AddChild(handle.node);
+                    // Update order of nodes
+                    targetNode.SortChildren();
+                    break;
                 }
-                // Then add as child to new parent
-                targetNode.AddChild(handle.node);
-                // Update order of nodes
-                targetNode.SortChildren();
-            } else if (handle.type == HandleType.Output && targetNode is IChildrenNode) {
-                // Do not allow connecting descendants as parents
-                if (handle.node.IsDescendantOf(targetNode)) {
-                    return;
+                case HandleType.Output when targetNode is IChildrenNode:
+                {
+                    // Do not allow connecting descendants as parents
+                    if (handle.node.IsDescendantOf(targetNode)) return;
+
+                    // Then add as child to new parent
+                    handle.node.AddChild(targetNode);
+                    // Update order of nodes
+                    handle.node.SortChildren();
+                    break;
                 }
-                // Then add as child to new parent
-                handle.node.AddChild(targetNode);
-                // Update order of nodes
-                handle.node.SortChildren();
             }
         }
 
@@ -460,132 +521,114 @@ namespace MBTEditor
         {
             currentMBT.selectedEditorNode = null;
             currentMBTEditor.Repaint();
-            for (int i = 0; i < currentNodes.Length; i++)
-            {
-                currentNodes[i].selected = false;
-            }
+            foreach (var t in currentNodes) t.selected = false;
+
             selectedNode = null;
             GUI.changed = true;
         }
 
         private Node FindNode(Vector2 mousePosition)
         {
-            for (int i = 0; i < currentNodes.Length; i++)
+            foreach (var t in currentNodes)
             {
                 // Get correct position of node with offset
-                Rect target = currentNodes[i].rect;
+                var target = t.rect;
                 target.position += workspaceOffset;
-                if (target.Contains(mousePosition)) {
-                    return currentNodes[i];
-                }
+                if (target.Contains(mousePosition)) return t;
             }
+
             return null;
         }
 
         private NodeHandle FindHandle(Vector2 mousePosition)
         {
-            for (int i = 0; i < currentNodes.Length; i++)
+            foreach (var node in currentNodes)
             {
-                Node node = currentNodes[i];
                 // Get correct position of node with offset
-                Rect targetRect = node.rect;
+                var targetRect = node.rect;
                 targetRect.position += workspaceOffset;
 
-                if (node is IChildrenNode) {
-                    Vector2 handlePoint = GetTopHandlePosition(targetRect);
-                    if (Vector2.Distance(handlePoint, mousePosition) < _handleDetectionDistance) {  
+                if (node is IChildrenNode)
+                {
+                    var handlePoint = GetTopHandlePosition(targetRect);
+                    if (Vector2.Distance(handlePoint, mousePosition) < _handleDetectionDistance)
                         return new NodeHandle(node, handlePoint, HandleType.Input);
-                    }
                 }
-                if (node is IParentNode) {
-                    Vector2 handlePoint = GetBottomHandlePosition(targetRect);
-                    if (Vector2.Distance(handlePoint, mousePosition) < _handleDetectionDistance) {  
+
+                if (node is not IParentNode) continue;
+                {
+                    var handlePoint = GetBottomHandlePosition(targetRect);
+                    if (Vector2.Distance(handlePoint, mousePosition) < _handleDetectionDistance)
                         return new NodeHandle(node, handlePoint, HandleType.Output);
-                    }
                 }
             }
+
             return null;
         }
 
         private void PaintNodes()
         {
-            for (int i = currentNodes.Length - 1; i >= 0 ; i--)
+            for (var i = currentNodes.Length - 1; i >= 0; i--)
             {
-                Node node = currentNodes[i];
-                Rect targetRect = node.rect;
+                var node = currentNodes[i];
+                var targetRect = node.rect;
                 targetRect.position += workspaceOffset;
                 // Draw node content
                 GUILayout.BeginArea(targetRect, GetNodeStyle(node));
-                    GUILayout.BeginVertical(_nodeContentBoxStyle);
-                    if (node.breakpoint)
-                    {
-                        GUILayout.Label(node.title, _nodeBreakpointLabelStyle);
-                    }
-                    else
-                    {
-                        GUILayout.Label(node.title, _nodeLabelStyle);  
-                    }
-                    GUILayout.EndVertical();
-                    if (Event.current.type == EventType.Repaint)
-                    {
-                        node.rect.height = GUILayoutUtility.GetLastRect().height;
-                    }
+                GUILayout.BeginVertical(_nodeContentBoxStyle);
+                GUILayout.Label(node.title, node.breakpoint ? _nodeBreakpointLabelStyle : _nodeLabelStyle);
+                GUILayout.EndVertical();
+                if (Event.current.type == EventType.Repaint) node.rect.height = GUILayoutUtility.GetLastRect().height;
+
                 GUILayout.EndArea();
 
                 // Paint warning icon
                 if (!Application.isPlaying && !node.IsValid())
-                {
                     GUI.Label(GetWarningIconRect(targetRect), EditorGUIUtility.IconContent("CollabConflict Icon"));
-                }
 
                 // Draw connection handles if needed
                 if (node is IChildrenNode)
                 {
-                    Vector2 top = GetTopHandlePosition(targetRect);
+                    var top = GetTopHandlePosition(targetRect);
                     GUI.DrawTexture(
-                        new Rect(top.x-8, top.y-5, 16, 16),
+                        new Rect(top.x - 8, top.y - 5, 16, 16),
                         Resources.Load("mbt_node_handle", typeof(Texture2D)) as Texture2D
                     );
                 }
-                if (node is IParentNode)
-                {
-                    Vector2 bottom = GetBottomHandlePosition(targetRect);
-                    GUI.DrawTexture(
-                        new Rect(bottom.x-8, bottom.y-11, 16, 16),
-                        Resources.Load("mbt_node_handle", typeof(Texture2D)) as Texture2D
-                    );
-                }
+
+                if (node is not IParentNode) continue;
+                var bottom = GetBottomHandlePosition(targetRect);
+                GUI.DrawTexture(
+                    new Rect(bottom.x - 8, bottom.y - 11, 16, 16),
+                    Resources.Load("mbt_node_handle", typeof(Texture2D)) as Texture2D
+                );
             }
         }
 
         private GUIStyle GetNodeStyle(Node node)
         {
-            if (node.selected) {
-                return _selectedNodeStyle;
-            }
-            switch (node.status)
+            if (node.selected) return _selectedNodeStyle;
+
+            return node.status switch
             {
-                case Status.Success:
-                    return _successNodeStyle;
-                case Status.Failure:
-                    return _failureNodeStyle;
-                case Status.Running:
-                    return _runningNodeStyle;
-            }
-            return _defaultNodeStyle;
+                Status.Success => _successNodeStyle,
+                Status.Failure => _failureNodeStyle,
+                Status.Running => _runningNodeStyle,
+                _ => _defaultNodeStyle
+            };
         }
 
-        private Vector2 GetTopHandlePosition(Rect rect)
+        private static Vector2 GetTopHandlePosition(Rect rect)
         {
-            return new Vector2(rect.x + rect.width/2, rect.y);
+            return new Vector2(rect.x + rect.width / 2, rect.y);
         }
 
-        private Vector2 GetBottomHandlePosition(Rect rect)
+        private static Vector2 GetBottomHandlePosition(Rect rect)
         {
-            return new Vector2(rect.x + rect.width/2, rect.y + rect.height);
+            return new Vector2(rect.x + rect.width / 2, rect.y + rect.height);
         }
 
-        private Rect GetWarningIconRect(Rect rect)
+        private static Rect GetWarningIconRect(Rect rect)
         {
             // return new Rect(rect.x - 10, rect.y + rect.height/2 - 10 , 20, 20);
             return new Rect(rect.x + rect.width - 2, rect.y - 1, 20, 20);
@@ -596,50 +639,50 @@ namespace MBTEditor
             // Store handle to connect later (null by default)
             dropdownHandleCache = handle;
             // Store real clicked position including workspace offset
-            if (useRectPosition) {
+            if (useRectPosition)
                 nodeDropdownTargetPosition = rect.position - workspaceOffset;
-            } else {
-                nodeDropdownTargetPosition = new Vector2(this.position.width/2, this.position.height/2) - workspaceOffset;
-            }
+            else
+                nodeDropdownTargetPosition = new Vector2(position.width / 2, position.height / 2) - workspaceOffset;
+
             // Open dropdown
             nodeDropdown.Show(rect);
         }
 
         private void OpenNodeMenu(Vector2 mousePosition, Node node)
         {
-            GenericMenu genericMenu = new GenericMenu();
+            var genericMenu = new GenericMenu();
             genericMenu.AddItem(new GUIContent("Breakpoint"), node.breakpoint, () => ToggleNodeBreakpoint(node));
             genericMenu.AddItem(new GUIContent("Duplicate"), false, () => DuplicateNode(node));
-            genericMenu.AddItem(new GUIContent("Disconnect Children"), false, () => DisconnectNodeChildren(node)); 
-            genericMenu.AddItem(new GUIContent("Disconnect Parent"), false, () => DisconnectNodeParent(node)); 
-            genericMenu.AddItem(new GUIContent("Delete Node"), false, () => DeleteNode(node)); 
+            genericMenu.AddItem(new GUIContent("Disconnect Children"), false, () => DisconnectNodeChildren(node));
+            genericMenu.AddItem(new GUIContent("Disconnect Parent"), false, () => DisconnectNodeParent(node));
+            genericMenu.AddItem(new GUIContent("Delete Node"), false, () => DeleteNode(node));
             genericMenu.ShowAsContext();
         }
 
-        void AddNode(ClassTypeDropdownItem item)
+        private void AddNode(ClassTypeDropdownItem item)
         {
             // In case there is nothing to add
-            if (currentMBT == null || item.classType == null) {
-                return;
-            }
+            if (currentMBT == null || item.classType == null) return;
+
             // Allow only one root
-            if (item.classType.IsAssignableFrom(typeof(Root)) && currentMBT.GetComponent<Root>() != null) {
+            if (item.classType.IsAssignableFrom(typeof(Root)) && currentMBT.GetComponent<Root>() != null)
+            {
                 Debug.LogWarning("You can not add more than one Root node.");
                 return;
             }
+
             Undo.SetCurrentGroupName("Create Node");
-            Node node = (Node)Undo.AddComponent(currentMBT.gameObject, item.classType);
+            var node = (Node)Undo.AddComponent(currentMBT.gameObject, item.classType);
             node.title = item.name;
             node.hideFlags = HideFlags.HideInInspector;
-            node.rect.position = nodeDropdownTargetPosition - new Vector2(node.rect.width/2, 0);
+            node.rect.position = nodeDropdownTargetPosition - new Vector2(node.rect.width / 2, 0);
             UpdateSelection();
-            if (dropdownHandleCache != null) {
-                // Add additonal offset (3,3) to be sure that point is inside rect
-                TryConnectNodes(dropdownHandleCache, nodeDropdownTargetPosition + workspaceOffset + new Vector2(3,3));
-            }
+            if (dropdownHandleCache != null)
+                // Add additional offset (3,3) to be sure that point is inside rect
+                TryConnectNodes(dropdownHandleCache, nodeDropdownTargetPosition + workspaceOffset + new Vector2(3, 3));
         }
 
-        private void ToggleNodeBreakpoint(Node node)
+        private static void ToggleNodeBreakpoint(Node node)
         {
             // Toggle breakpoint flag
             // Undo.RecordObject(node, "Toggle Breakpoint");
@@ -648,9 +691,8 @@ namespace MBTEditor
 
         private void DeleteNode(Node node)
         {
-            if (currentMBT == null) {
-                return;
-            }
+            if (currentMBT == null) return;
+
             DeselectNode();
             // Disconnect all children and parent
             Undo.SetCurrentGroupName("Delete Node");
@@ -661,19 +703,18 @@ namespace MBTEditor
             UpdateSelection();
         }
 
-        private void DisconnectNodeParent(Node node)
+        private static void DisconnectNodeParent(Node node)
         {
-            if (node.parent != null) {
-                Undo.RecordObject(node, "Disconnect Parent");
-                Undo.RecordObject(node.parent, "Disconnect Parent");
-                node.parent.RemoveChild(node);
-            }
+            if (node.parent == null) return;
+            Undo.RecordObject(node, "Disconnect Parent");
+            Undo.RecordObject(node.parent, "Disconnect Parent");
+            node.parent.RemoveChild(node);
         }
 
-        private void DisconnectNodeChildren(Node node)
+        private static void DisconnectNodeChildren(Node node)
         {
             Undo.RecordObject(node, "Disconnect Children");
-            for (int i = node.children.Count - 1; i >= 0 ; i--)
+            for (var i = node.children.Count - 1; i >= 0; i--)
             {
                 Undo.RecordObject(node.children[i], "Disconnect Children");
                 node.RemoveChild(node.children[i]);
@@ -684,17 +725,18 @@ namespace MBTEditor
         {
             // NOTE: This code is mostly copied from AddNode()
             // Check if there is MBT
-            if (currentMBT == null) {
-                return;
-            }
-            System.Type classType = contextNode.GetType();
+            if (currentMBT == null) return;
+
+            var classType = contextNode.GetType();
             // Allow only one root
-            if (classType.IsAssignableFrom(typeof(Root)) && currentMBT.GetComponent<Root>() != null) {
+            if (classType.IsAssignableFrom(typeof(Root)) && currentMBT.GetComponent<Root>() != null)
+            {
                 Debug.LogWarning("You can not add more than one Root node.");
                 return;
             }
+
             Undo.SetCurrentGroupName("Duplicate Node");
-            Node node = (Node)Undo.AddComponent(currentMBT.gameObject, classType);
+            var node = (Node)Undo.AddComponent(currentMBT.gameObject, classType);
             // Copy values
             EditorUtility.CopySerialized(contextNode, node);
             // Set flags anyway to ensure it is not visible in inspector
@@ -709,14 +751,15 @@ namespace MBTEditor
         /// It is quite unique, but https://stackoverflow.com/questions/2920696/how-generate-unique-integers-based-on-guids
         private int GenerateId()
         {
-            return System.Guid.NewGuid().GetHashCode();
+            return Guid.NewGuid().GetHashCode();
         }
 
         private void PaintBackground()
         {
             // Background
             Handles.BeginGUI();
-            Handles.DrawSolidRectangleWithOutline(new Rect(0, 0, position.width, position.height), _editorBackgroundColor, Color.gray);
+            Handles.DrawSolidRectangleWithOutline(new Rect(0, 0, position.width, position.height),
+                _editorBackgroundColor, Color.gray);
             Handles.EndGUI();
             // Grid lines
             DrawBackgroundGrid(20, 0.1f, new Color(0.3f, 0.36f, 0.5f));
@@ -726,24 +769,22 @@ namespace MBTEditor
         /// Method copied from https://gram.gs/gramlog/creating-node-based-editor-unity/
         private void DrawBackgroundGrid(float gridSpacing, float gridOpacity, Color gridColor)
         {
-            int widthDivs = Mathf.CeilToInt(position.width / gridSpacing);
-            int heightDivs = Mathf.CeilToInt(position.height / gridSpacing);
-    
+            var widthDivs = Mathf.CeilToInt(position.width / gridSpacing);
+            var heightDivs = Mathf.CeilToInt(position.height / gridSpacing);
+
             Handles.BeginGUI();
 
             Handles.color = new Color(gridColor.r, gridColor.g, gridColor.b, gridOpacity);
-    
-            Vector3 newOffset = new Vector3(workspaceOffset.x % gridSpacing, workspaceOffset.y % gridSpacing, 0);
-    
-            for (int i = 0; i <= widthDivs; i++)
-            {
-                Handles.DrawLine(new Vector3(gridSpacing * i, -gridSpacing, 0) + newOffset, new Vector3(gridSpacing * i, position.height+gridSpacing, 0f) + newOffset);
-            }
-    
-            for (int j = 0; j <= heightDivs; j++)
-            {
-                Handles.DrawLine(new Vector3(-gridSpacing, gridSpacing * j, 0) + newOffset, new Vector3(position.width+gridSpacing, gridSpacing * j, 0f) + newOffset);
-            }
+
+            var newOffset = new Vector3(workspaceOffset.x % gridSpacing, workspaceOffset.y % gridSpacing, 0);
+
+            for (var i = 0; i <= widthDivs; i++)
+                Handles.DrawLine(new Vector3(gridSpacing * i, -gridSpacing, 0) + newOffset,
+                    new Vector3(gridSpacing * i, position.height + gridSpacing, 0f) + newOffset);
+
+            for (var j = 0; j <= heightDivs; j++)
+                Handles.DrawLine(new Vector3(-gridSpacing, gridSpacing * j, 0) + newOffset,
+                    new Vector3(position.width + gridSpacing, gridSpacing * j, 0f) + newOffset);
 
             Handles.color = Color.white;
             Handles.EndGUI();
@@ -751,9 +792,9 @@ namespace MBTEditor
 
         private class NodeHandle
         {
-            public Node node;
-            public Vector2 position;
-            public HandleType type;
+            public readonly Node node;
+            public readonly Vector2 position;
+            public readonly HandleType type;
 
             public NodeHandle(Node node, Vector2 position, HandleType type)
             {
@@ -765,7 +806,8 @@ namespace MBTEditor
 
         private enum HandleType
         {
-            Input, Output
+            Input,
+            Output
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -13,7 +11,7 @@ namespace MBT
             // Allow only one children
             if (this.children.Count > 0)
             {
-                Node child = this.children[0];
+                var child = this.children[0];
                 if (child == node) {
                     return;
                 }
@@ -30,23 +28,16 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            if (children.Count == 1) {
-                Node child = children[0];
-                if (child.status == Status.Success || child.status == Status.Failure) {
-                    return NodeResult.From(child.status);
-                }
-                return child.runningNodeResult;
-            }
-            return NodeResult.failure;
+            if (children.Count != 1) return NodeResult.failure;
+            var child = children[0];
+            return child.status is Status.Success or Status.Failure ? NodeResult.From(child.status) : child.runningNodeResult;
         }
 
         public override void RemoveChild(Node node)
         {
-            if (children.Contains(node))
-            {
-                children.Remove(node);
-                node.parent = null;
-            }
+            if (!children.Contains(node)) return;
+            children.Remove(node);
+            node.parent = null;
         }
     }
 }

@@ -1,19 +1,18 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace MBT
 {
     public abstract class Decorator : Node, IParentNode, IChildrenNode
     {
-        private Node[] stackState = new Node[0];
+        private Node[] stackState = Array.Empty<Node>();
 
         public override void AddChild(Node node)
         {
             // Allow only one children
             if (this.children.Count > 0)
             {
-                Node child = this.children[0];
+                var child = this.children[0];
                 if (child == node) {
                     return;
                 }
@@ -30,19 +29,14 @@ namespace MBT
 
         protected Node GetChild()
         {
-            if (children.Count > 0) {
-                return children[0];
-            }
-            return null;
+            return children.Count > 0 ? children[0] : null;
         }
 
         public override void RemoveChild(Node node)
         {
-            if (children.Contains(node))
-            {
-                children.Remove(node);
-                node.parent = null;
-            }
+            if (!children.Contains(node)) return;
+            children.Remove(node);
+            node.parent = null;
         }
 
         /// <summary>
@@ -57,13 +51,13 @@ namespace MBT
             }
         }
 
-        [System.Obsolete]
+        [Obsolete]
         protected void DisposeBTState()
         {
-            stackState = new Node[0];
+            stackState = Array.Empty<Node>();
         }
 
-        internal Node[] GetStoredTreeSnapshot()
+        internal IEnumerable<Node> GetStoredTreeSnapshot()
         {
             return stackState;
         }
@@ -82,7 +76,7 @@ namespace MBT
                     }
                     break;
                 case Abort.LowerPriority:
-                    if (status == Status.Success || status == Status.Failure) {
+                    if (status is Status.Success or Status.Failure) {
                         behaviourTree.Interrupt(this);
                     }
                     break;

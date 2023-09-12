@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -9,7 +7,7 @@ namespace MBT
     public class Repeater : Decorator
     {
         public int loops = 1;
-        public bool infinite = false;
+        public bool infinite;
         private int count;
         
         public override void OnEnter()
@@ -19,17 +17,16 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if(node == null) {
                 return NodeResult.failure;
             }
-            if (infinite || count > 0) {
-                // Repeat children
-                behaviourTree.ResetNodesTo(this);
-                count -= 1;
-                return node.runningNodeResult;
-            }
-            return NodeResult.success;
+
+            if (!infinite && count <= 0) return NodeResult.success;
+            // Repeat children
+            behaviourTree.ResetNodesTo(this);
+            count -= 1;
+            return node.runningNodeResult;
         }
     }
 }

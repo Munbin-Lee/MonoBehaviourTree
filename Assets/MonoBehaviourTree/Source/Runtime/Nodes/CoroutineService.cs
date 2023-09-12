@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace MBT
@@ -8,7 +7,7 @@ namespace MBT
     {
         public float interval = 1f;
         public bool callOnEnter = true;
-        protected Coroutine coroutine;
+        private Coroutine coroutine;
         private WaitForSeconds waitForSeconds;
 
         public override void OnEnter()
@@ -28,17 +27,14 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node == null) {
                 return NodeResult.failure;
             }
-            if (node.status == Status.Success || node.status == Status.Failure) {
-                return NodeResult.From(node.status);
-            }
-            return node.runningNodeResult;
+            return node.status is Status.Success or Status.Failure ? NodeResult.From(node.status) : node.runningNodeResult;
         }
 
-        public abstract void Task();
+        protected abstract void Task();
 
         public override void OnExit()
         {

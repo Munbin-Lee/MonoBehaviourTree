@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 
 namespace MBT
@@ -9,7 +8,7 @@ namespace MBT
     {
         // [HideInInspector]
         [SerializeField]
-        protected T val = default(T);
+        protected T val;
         protected event ChangeListener<T> listeners = delegate {};
 
         // This is required to correctly compare Unity Objects as generic fields
@@ -27,17 +26,13 @@ namespace MBT
 
         public T Value
         {
-            get
-            {
-                return val;
-            }
+            get => val;
             set
             {
-                if (!ValueEquals(val, value)) {
-                    T oldValue = val;
-                    val = value;
-                    listeners.Invoke(oldValue, value);
-                }
+                if (ValueEquals(val, value)) return;
+                var oldValue = val;
+                val = value;
+                listeners.Invoke(oldValue, value);
             }
         }
 
@@ -48,21 +43,21 @@ namespace MBT
         }
     }
 
-    public delegate void ChangeListener<T>(T oldValue, T newValue);
+    public delegate void ChangeListener<in T>(T oldValue, T newValue);
 
-    public interface Observable<T>
+    public interface Observable<out T>
     {
         void AddListener(ChangeListener<T> listener);
         void RemoveListener(ChangeListener<T> listener);
     }
 
-    [System.Serializable]
+    [Serializable]
     public class VariableReference<T, U> : BaseVariableReference where T : BlackboardVariable
     {
         // Cache
-        protected T value = null;
+        protected T value;
         [SerializeField]
-        protected U constantValue = default(U);
+        protected U constantValue;
 
         /// <summary>
         /// Returns observable Variable or null if it doesn't exists on blackboard.
@@ -93,46 +88,34 @@ namespace MBT
 
     public enum VarRefMode { EnableConstant, DisableConstant }
 
-    [System.Serializable]
+    [Serializable]
     public abstract class BaseVariableReference
     {
         [SerializeField]
-        protected bool useConstant = false;
+        protected bool useConstant;
         // Additional editor feature to lock switch
         [SerializeField]
         protected VarRefMode mode = VarRefMode.EnableConstant;
         public Blackboard blackboard;
         public string key;
 
-        public virtual bool isConstant
-        {
-            get { return useConstant; }
-        }
+        public virtual bool isConstant => useConstant;
 
         /// <summary>
         /// Returns true when constant value is valid
         /// </summary>
         /// <value></value>
-        protected virtual bool isConstantValid
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected virtual bool isConstantValid => true;
 
         /// <summary>
         /// Returns true when variable setup is invalid
         /// </summary>
-        public bool isInvalid
-        {
-            get { return (isConstant)? !isConstantValid : blackboard == null || string.IsNullOrEmpty(key); }
-        }
+        public bool isInvalid => (isConstant)? !isConstantValid : blackboard == null || string.IsNullOrEmpty(key);
 
-        protected void SetMode(VarRefMode mode)
+        protected void SetMode(VarRefMode refMode)
         {
-            this.mode = mode;
-            useConstant = (mode == VarRefMode.DisableConstant)? false : useConstant;
+            this.mode = refMode;
+            useConstant = (refMode != VarRefMode.DisableConstant) && useConstant;
         }
     }
 }

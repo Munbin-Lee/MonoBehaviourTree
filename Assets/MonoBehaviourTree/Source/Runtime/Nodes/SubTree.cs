@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -17,15 +15,12 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            // Return fialure when subtree is not defined
+            // Return failure when subtree is not defined
             if (tree == null) {
                 return NodeResult.failure;
             }
-            Node root = tree.GetRoot();
-            if (root.status == Status.Success || root.status == Status.Failure) {
-                return NodeResult.From(root.status);
-            }
-            return root.runningNodeResult;
+            var root = tree.GetRoot();
+            return root.status is Status.Success or Status.Failure ? NodeResult.From(root.status) : root.runningNodeResult;
         }
 
         public override void RemoveChild(Node node)

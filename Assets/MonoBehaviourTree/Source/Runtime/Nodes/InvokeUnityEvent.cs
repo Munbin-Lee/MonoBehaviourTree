@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 
 namespace MBT
@@ -55,18 +53,18 @@ namespace MBT
 
         public override bool IsValid()
         {
-            switch (type)
+            return type switch
             {
-                case EventType.Transform: return !transformReference.isInvalid;
-                case EventType.Float: return !floatReference.isInvalid;
-                case EventType.Bool: return !boolReference.isInvalid;
-                case EventType.String: return !stringReference.isInvalid;
-                case EventType.Vector3: return !vector3Reference.isInvalid;
-                case EventType.Vector2: return !vector2Reference.isInvalid;
-                case EventType.Int: return !intReference.isInvalid;
-                case EventType.GameObject: return !gameObjectReference.isInvalid;
-                default: return true;
-            }
+                EventType.Transform => !transformReference.isInvalid,
+                EventType.Float => !floatReference.isInvalid,
+                EventType.Bool => !boolReference.isInvalid,
+                EventType.String => !stringReference.isInvalid,
+                EventType.Vector3 => !vector3Reference.isInvalid,
+                EventType.Vector2 => !vector2Reference.isInvalid,
+                EventType.Int => !intReference.isInvalid,
+                EventType.GameObject => !gameObjectReference.isInvalid,
+                _ => true
+            };
         }
 
         public enum EventType

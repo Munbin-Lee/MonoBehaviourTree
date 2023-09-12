@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -10,7 +8,7 @@ namespace MBT
     {
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node.status == Status.Failure) {
                 return NodeResult.success;
             }

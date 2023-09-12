@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using MBT;
 
@@ -9,16 +7,16 @@ namespace MBTEditor
     [CustomEditor(typeof(NumberCondition))]
     public class NumberConditionEditor : Editor
     {
-        SerializedProperty titleProp;
-        SerializedProperty abortProp;
-        SerializedProperty floatReferenceProp;
-        SerializedProperty intReferenceProp;
-        SerializedProperty floatReference2Prop;
-        SerializedProperty intReference2Prop;
-        SerializedProperty typeProp;
-        SerializedProperty comparatorProp;
+        private SerializedProperty titleProp;
+        private SerializedProperty abortProp;
+        private SerializedProperty floatReferenceProp;
+        private SerializedProperty intReferenceProp;
+        private SerializedProperty floatReference2Prop;
+        private SerializedProperty intReference2Prop;
+        private SerializedProperty typeProp;
+        private SerializedProperty comparatorProp;
 
-        void OnEnable()
+        private void OnEnable()
         {
             titleProp = serializedObject.FindProperty("title");
             floatReferenceProp = serializedObject.FindProperty("floatReference");

@@ -1,17 +1,14 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using MBT;
-using System;
 
 namespace MBTEditor
 {
     [CustomEditor(typeof(InvokeUnityEvent))]
     public class InvokeUnityEventEditor : Editor
     {
-        SerializedProperty titleProp;
-        SerializedProperty typeProp;
+        private SerializedProperty titleProp;
+        private SerializedProperty typeProp;
 
         private SerializedProperty transformEventProp;
         private SerializedProperty gameObjectEventProp;
@@ -31,7 +28,7 @@ namespace MBTEditor
         private SerializedProperty vector3ReferenceProp;
         private SerializedProperty vector2ReferenceProp;
 
-        void OnEnable()
+        private void OnEnable()
         {
             titleProp = serializedObject.FindProperty("title");
             typeProp = serializedObject.FindProperty("type");
@@ -67,7 +64,7 @@ namespace MBTEditor
             EditorGUILayout.PropertyField(typeProp);
             EditorGUILayout.Space();
 
-            if (GetSerializedProperties(out SerializedProperty eventProp, out SerializedProperty variableProp))
+            if (GetSerializedProperties(out var eventProp, out var variableProp))
             {
                 EditorGUILayout.PropertyField(variableProp, variableLabel);
                 EditorGUILayout.PropertyField(eventProp, eventLabel);
@@ -81,7 +78,7 @@ namespace MBTEditor
 
         private bool GetSerializedProperties(out SerializedProperty eventProp, out SerializedProperty referenceProp)
         {
-            InvokeUnityEvent.EventType eventType = (InvokeUnityEvent.EventType)typeProp.enumValueIndex;
+            var eventType = (InvokeUnityEvent.EventType)typeProp.enumValueIndex;
             switch (eventType)
             {
                 case InvokeUnityEvent.EventType.Transform:

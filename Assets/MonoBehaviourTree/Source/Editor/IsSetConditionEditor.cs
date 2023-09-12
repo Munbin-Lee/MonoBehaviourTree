@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using MBT;
 
@@ -9,15 +7,15 @@ namespace MBTEditor
     [CustomEditor(typeof(IsSetCondition))]
     public class IsSetConditionEditor : Editor
     {
-        SerializedProperty titleProp;
-        SerializedProperty abortProp;
-        SerializedProperty boolReferenceProp;
-        SerializedProperty objectReferenceProp;
-        SerializedProperty transformReferenceProp;
-        SerializedProperty typeProp;
-        SerializedProperty invertProp;
+        private SerializedProperty titleProp;
+        private SerializedProperty abortProp;
+        private SerializedProperty boolReferenceProp;
+        private SerializedProperty objectReferenceProp;
+        private SerializedProperty transformReferenceProp;
+        private SerializedProperty typeProp;
+        private SerializedProperty invertProp;
 
-        void OnEnable()
+        private void OnEnable()
         {
             titleProp = serializedObject.FindProperty("title");
             boolReferenceProp = serializedObject.FindProperty("boolReference");
@@ -38,17 +36,17 @@ namespace MBTEditor
             EditorGUILayout.PropertyField(invertProp);
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(typeProp);
-            if (typeProp.enumValueIndex == (int)IsSetCondition.Type.Boolean)
+            switch (typeProp.enumValueIndex)
             {
-                EditorGUILayout.PropertyField(boolReferenceProp, new GUIContent("Variable"));
-            }
-            else if (typeProp.enumValueIndex == (int)IsSetCondition.Type.GameObject)
-            {
-                EditorGUILayout.PropertyField(objectReferenceProp, new GUIContent("Variable"));
-            }
-            else
-            {
-                EditorGUILayout.PropertyField(transformReferenceProp, new GUIContent("Variable"));
+                case (int)IsSetCondition.Type.Boolean:
+                    EditorGUILayout.PropertyField(boolReferenceProp, new GUIContent("Variable"));
+                    break;
+                case (int)IsSetCondition.Type.GameObject:
+                    EditorGUILayout.PropertyField(objectReferenceProp, new GUIContent("Variable"));
+                    break;
+                default:
+                    EditorGUILayout.PropertyField(transformReferenceProp, new GUIContent("Variable"));
+                    break;
             }
 
             if (EditorGUI.EndChangeCheck())

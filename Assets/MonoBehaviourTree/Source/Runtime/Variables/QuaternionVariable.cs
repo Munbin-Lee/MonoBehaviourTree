@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -29,10 +27,7 @@ namespace MBT
 
         public Quaternion Value
         {
-            get
-            {
-                return (useConstant)? constantValue : this.GetVariable().Value;
-            }
+            get => (useConstant)? constantValue : this.GetVariable().Value;
             set
             {
                 if (useConstant)

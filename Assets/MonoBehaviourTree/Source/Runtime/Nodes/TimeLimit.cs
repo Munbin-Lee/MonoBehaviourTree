@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -9,7 +7,7 @@ namespace MBT
     public class TimeLimit : Decorator
     {
         public FloatReference time = new FloatReference(5f);
-        public float randomDeviation = 0f;
+        public float randomDeviation;
         private bool limitReached;
         private float timeout;
 
@@ -28,14 +26,11 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node == null || limitReached) {
                 return NodeResult.failure;
             }
-            if (node.status == Status.Success || node.status == Status.Failure) {
-                return NodeResult.From(node.status);
-            }
-            return node.runningNodeResult;
+            return node.status is Status.Success or Status.Failure ? NodeResult.From(node.status) : node.runningNodeResult;
         }
 
         public override void OnExit()
@@ -45,15 +40,13 @@ namespace MBT
 
         private void OnBehaviourTreeTick()
         {
-            if (timeout <= Time.time)
-            {
-                timeout = float.MaxValue;
-                limitReached = true;
-                TryAbort(Abort.Self);
-            }
+            if (!(timeout <= Time.time)) return;
+            timeout = float.MaxValue;
+            limitReached = true;
+            TryAbort(Abort.Self);
         }
 
-        void OnValidate()
+        private void OnValidate()
         {
             if (time.isConstant)
             {

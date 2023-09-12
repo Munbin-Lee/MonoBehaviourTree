@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -17,7 +15,7 @@ namespace MBT
         public IntReference intReference2 = new IntReference(0);
 
         // IMPROVEMENT: This class could be split into to different nodes
-        public override bool Check()
+        protected override bool Check()
         {
             if (type == Type.Float)
             {
@@ -48,41 +46,37 @@ namespace MBT
 
         public override void OnAllowInterrupt()
         {
-            if (abort != Abort.None)
-            {
-                ObtainTreeSnapshot();
-                if (type == Type.Float) {
-                    floatReference.GetVariable().AddListener(OnVariableChange);
-                    if (!floatReference2.isConstant)
-                    {
-                        floatReference2.GetVariable().AddListener(OnVariableChange);
-                    }
-                } else {
-                    intReference.GetVariable().AddListener(OnVariableChange);
-                    if (!intReference2.isConstant)
-                    {
-                        intReference2.GetVariable().AddListener(OnVariableChange);
-                    }
+            if (abort == Abort.None) return;
+            ObtainTreeSnapshot();
+            if (type == Type.Float) {
+                floatReference.GetVariable().AddListener(OnVariableChange);
+                if (!floatReference2.isConstant)
+                {
+                    floatReference2.GetVariable().AddListener(OnVariableChange);
+                }
+            } else {
+                intReference.GetVariable().AddListener(OnVariableChange);
+                if (!intReference2.isConstant)
+                {
+                    intReference2.GetVariable().AddListener(OnVariableChange);
                 }
             }
         }
 
         public override void OnDisallowInterrupt()
         {
-            if (abort != Abort.None)
-            {
-                if (type == Type.Float) {
-                    floatReference.GetVariable().RemoveListener(OnVariableChange);
-                    if (!floatReference2.isConstant)
-                    {
-                        floatReference2.GetVariable().RemoveListener(OnVariableChange);
-                    }
-                } else {
-                    intReference.GetVariable().RemoveListener(OnVariableChange);
-                    if (!intReference2.isConstant)
-                    {
-                        intReference2.GetVariable().RemoveListener(OnVariableChange);
-                    }
+            if (abort == Abort.None) return;
+            if (type == Type.Float) {
+                floatReference.GetVariable().RemoveListener(OnVariableChange);
+                if (!floatReference2.isConstant)
+                {
+                    floatReference2.GetVariable().RemoveListener(OnVariableChange);
+                }
+            } else {
+                intReference.GetVariable().RemoveListener(OnVariableChange);
+                if (!intReference2.isConstant)
+                {
+                    intReference2.GetVariable().RemoveListener(OnVariableChange);
                 }
             }
         }
@@ -99,12 +93,12 @@ namespace MBT
 
         public override bool IsValid()
         {
-            switch (type)
+            return type switch
             {
-                case Type.Float: return !(floatReference.isInvalid || floatReference2.isInvalid);
-                case Type.Int: return !(intReference.isInvalid || intReference2.isInvalid);
-                default: return true;
-            }
+                Type.Float => !(floatReference.isInvalid || floatReference2.isInvalid),
+                Type.Int => !(intReference.isInvalid || intReference2.isInvalid),
+                _ => true
+            };
         }
 
         public enum Type

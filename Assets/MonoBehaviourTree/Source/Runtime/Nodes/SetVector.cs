@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -32,12 +30,12 @@ namespace MBT
 
         public override bool IsValid()
         {
-            switch (type)
+            return type switch
             {
-                case Type.Vector3: return !(sourceVector3.isInvalid || destinationVector3.isInvalid);
-                case Type.Vector2: return !(sourceVector2.isInvalid || destinationVector2.isInvalid);
-                default: return true;
-            }
+                Type.Vector3 => !(sourceVector3.isInvalid || destinationVector3.isInvalid),
+                Type.Vector2 => !(sourceVector2.isInvalid || destinationVector2.isInvalid),
+                _ => true
+            };
         }
 
         private enum Type

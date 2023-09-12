@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -10,8 +8,8 @@ namespace MBT
     {
         [Tooltip("Wait time in seconds")]
         public FloatReference time = new FloatReference(1f);
-        public float randomDeviation = 0f;
-        public bool continueOnRestart = false;
+        public float randomDeviation;
+        public bool continueOnRestart;
         private float timer;
         
         public override void OnEnter()
@@ -35,16 +33,9 @@ namespace MBT
             return NodeResult.running;
         }
 
-        void OnValidate()
+        private void OnValidate()
         {
-            if (time.isConstant)
-            {
-                randomDeviation = Mathf.Clamp(randomDeviation, 0f, time.GetConstant());
-            }
-            else
-            {
-                randomDeviation = Mathf.Clamp(randomDeviation, 0f, 600f);
-            }
+            randomDeviation = Mathf.Clamp(randomDeviation, 0f, time.isConstant ? time.GetConstant() : 600f);
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using MBT;
 
@@ -9,15 +7,15 @@ namespace MBTEditor
     [CustomEditor(typeof(SetNumber))]
     public class SetNumberEditor : Editor
     {
-        SerializedProperty titleProp;
-        SerializedProperty typeProp;
-        SerializedProperty operationProp;
-        SerializedProperty sourceIntProp;
-        SerializedProperty sourceFloatProp;
-        SerializedProperty destinationFloatProp;
-        SerializedProperty destinationIntProp;
+        private SerializedProperty titleProp;
+        private SerializedProperty typeProp;
+        private SerializedProperty operationProp;
+        private SerializedProperty sourceIntProp;
+        private SerializedProperty sourceFloatProp;
+        private SerializedProperty destinationFloatProp;
+        private SerializedProperty destinationIntProp;
 
-        void OnEnable()
+        private void OnEnable()
         {
             titleProp = serializedObject.FindProperty("title");
             typeProp = serializedObject.FindProperty("type");

@@ -1,18 +1,16 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
     public abstract class Service : Decorator
     {
         public float interval = 1f;
-        public float randomDeviation = 0f;
+        public float randomDeviation;
         public bool callOnEnter = true;
         /// <summary>
         /// Time of the next update of the task
         /// </summary>
-        protected float nextScheduledTime;
+        private float nextScheduledTime;
 
         public override void OnEnter()
         {
@@ -27,17 +25,14 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node == null) {
                 return NodeResult.failure;
             }
-            if (node.status == Status.Success || node.status == Status.Failure) {
-                return NodeResult.From(node.status);
-            }
-            return node.runningNodeResult;
+            return node.status is Status.Success or Status.Failure ? NodeResult.From(node.status) : node.runningNodeResult;
         }
 
-        public abstract void Task();
+        protected abstract void Task();
 
         public override void OnExit()
         {
@@ -46,12 +41,10 @@ namespace MBT
 
         private void OnBehaviourTreeTick()
         {
-            if (nextScheduledTime <= Time.time)
-            {
-                // Set time of the next update and run the task
-                nextScheduledTime = Time.time + interval + Random.Range(-randomDeviation, randomDeviation);
-                Task();
-            }
+            if (!(nextScheduledTime <= Time.time)) return;
+            // Set time of the next update and run the task
+            nextScheduledTime = Time.time + interval + Random.Range(-randomDeviation, randomDeviation);
+            Task();
         }
 
         protected virtual void OnValidate()

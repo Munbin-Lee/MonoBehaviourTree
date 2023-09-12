@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -12,9 +10,9 @@ namespace MBTEditor
 {
     public class ClassTypeDropdownItem : AdvancedDropdownItem
     {
-        public Type classType;
-        public int order;
-        public string path;
+        public readonly Type classType;
+        public readonly int order;
+        public readonly string path;
 
         public ClassTypeDropdownItem(string name, Type type = null, int order = 1000, string path = "") : base(name)
         {
@@ -26,7 +24,7 @@ namespace MBTEditor
 
     public class NodeDropdown : AdvancedDropdown
     {
-        protected Action<ClassTypeDropdownItem> Callback;
+        private readonly Action<ClassTypeDropdownItem> Callback;
         
         public NodeDropdown(AdvancedDropdownState state, Action<ClassTypeDropdownItem> callback) : base(state)
         {
@@ -39,69 +37,69 @@ namespace MBTEditor
             var root = new ClassTypeDropdownItem("Nodes");
 
             // List for all found subclasses
-            List<Type> results = new List<Type>();
+            var results = new List<Type>();
             
             // Search all assemblies
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 // Find all subclasses of Node
-                IEnumerable<Type> enumerable = assembly.GetTypes()
+                var enumerable = assembly.GetTypes()
                 .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Node)));
                 results.AddRange(enumerable);
             }
 
             // Keep track of all paths to correctly build tree later
-            Dictionary<string, ClassTypeDropdownItem> nodePathsDictionary = new Dictionary<string, ClassTypeDropdownItem>();
-            nodePathsDictionary.Add("", root);
+            var nodePathsDictionary = new Dictionary<string, ClassTypeDropdownItem> { { "", root } };
             // Create list of items
-            List<ClassTypeDropdownItem> items = new List<ClassTypeDropdownItem>();
-            foreach (Type type in results)
+            var items = new List<ClassTypeDropdownItem>();
+            var index = 0;
+            for (; index < results.Count; index++)
             {
-                if(type.IsDefined(typeof(MBTNode), false))
+                var type = results[index];
+                if (!type.IsDefined(typeof(MBTNode), false)) continue;
+                var nodeMeta = type.GetCustomAttribute<MBTNode>();
+                string itemName;
+                var nodePath = "";
+                if (string.IsNullOrEmpty(nodeMeta.name))
                 {
-                    MBTNode nodeMeta = type.GetCustomAttribute<MBTNode>();
-                    string itemName;
-                    string nodePath = "";
-                    if (String.IsNullOrEmpty(nodeMeta.name))
-                    {
-                        itemName = type.Name;
-                    }
-                    else
-                    {
-                        string[] path = nodeMeta.name.Split('/');
-                        itemName = path[path.Length-1];
-                        nodePath = BuildPathIfNotExists(path, ref nodePathsDictionary);
-                    }
-                    ClassTypeDropdownItem classTypeDropdownItem = new ClassTypeDropdownItem(itemName, type, nodeMeta.order, nodePath);
-                    if (nodeMeta.icon != null)
-                    {
-                        classTypeDropdownItem.icon = Resources.Load(nodeMeta.icon, typeof(Texture2D)) as Texture2D;
-                    }
-                    items.Add(classTypeDropdownItem);
+                    itemName = type.Name;
                 }
+                else
+                {
+                    var path = nodeMeta.name.Split('/');
+                    itemName = path[^1];
+                    nodePath = BuildPathIfNotExists(path, ref nodePathsDictionary);
+                }
+
+                var classTypeDropdownItem =
+                    new ClassTypeDropdownItem(itemName, type, nodeMeta.order, nodePath);
+                if (nodeMeta.icon != null)
+                {
+                    classTypeDropdownItem.icon = Resources.Load(nodeMeta.icon, typeof(Texture2D)) as Texture2D;
+                }
+
+                items.Add(classTypeDropdownItem);
             }
 
             // Sort items
             items.Sort((x, y) => {
-                int result = x.order.CompareTo(y.order);
-                return result != 0 ? result : x.name.CompareTo(y.name);
+                var result = x.order.CompareTo(y.order);
+                return result != 0 ? result : string.Compare(x.name, y.name, StringComparison.Ordinal);
             });
             
             // Add all nodes to menu
-            for (int i = 0; i < items.Count; i++)
+            foreach (var t in items)
             {
-                nodePathsDictionary[items[i].path].AddChild(items[i]);
+                nodePathsDictionary[t.path].AddChild(t);
             }
 
             // Remove root to avoid infinite root folder loop
             nodePathsDictionary.Remove("");
-            List<ClassTypeDropdownItem> parentNodes = nodePathsDictionary.Values.ToList();
-            parentNodes.Sort((x, y) => {
-                return x.name.CompareTo(y.name);
-            });
+            var parentNodes = nodePathsDictionary.Values.ToList();
+            parentNodes.Sort((x, y) => string.Compare(x.name, y.name, StringComparison.Ordinal));
 
             // Add folders
-            for (int i = 0; i < parentNodes.Count(); i++)
+            for (var i = 0; i < parentNodes.Count(); i++)
             {
                 root.AddChild(parentNodes[i]);
             }
@@ -115,28 +113,26 @@ namespace MBTEditor
         }
 
         /// <summary>
-        /// Creates nodes if path does not exists. Supports only signle level folders.
+        /// Creates nodes if path does not exists. Supports only single level folders.
         /// </summary>
         /// <param name="path">Path to build. Last element should be actual node name.</param>
         /// <param name="dictionary">Reference to dictionary to store references to items</param>
         /// <returns>Path to provided node in path</returns>
-        protected string BuildPathIfNotExists(string[] path, ref Dictionary<string, ClassTypeDropdownItem> dictionary)
+        private static string BuildPathIfNotExists(IReadOnlyList<string> path, ref Dictionary<string, ClassTypeDropdownItem> dictionary)
         {
             // IMPORTANT: This code supports only single level folders. Nodes can't be nested more than one level.
-            if (path.Length != 2)
+            if (path.Count != 2)
             {
                 return "";
             }
             AdvancedDropdownItem root = dictionary[""];
             // // This code assumes the last element of path is actual name of node
             // string nodePath = String.Join("/", path, 0, path.Length-1);
-            string nodePath = path[0];
+            var nodePath = path[0];
             // Create path nodes if does not exists
-            if(!dictionary.ContainsKey(nodePath))
-            {
-                ClassTypeDropdownItem node = new ClassTypeDropdownItem(nodePath);
-                dictionary.Add(nodePath, node);
-            }
+            if (dictionary.ContainsKey(nodePath)) return nodePath;
+            var node = new ClassTypeDropdownItem(nodePath);
+            dictionary.Add(nodePath, node);
             return nodePath;
         }
     }

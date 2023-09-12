@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -21,17 +19,11 @@ namespace MBT
             SetMode(mode);
         }
 
-        protected override bool isConstantValid
-        {
-            get { return constantValue != null; }
-        }
+        protected override bool isConstantValid => constantValue != null;
 
         public Transform Value
         {
-            get
-            {
-                return (useConstant)? constantValue : this.GetVariable().Value;
-            }
+            get => (useConstant)? constantValue : this.GetVariable().Value;
             set
             {
                 if (useConstant)

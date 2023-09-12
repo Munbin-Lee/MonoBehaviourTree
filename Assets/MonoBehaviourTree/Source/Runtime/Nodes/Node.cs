@@ -1,5 +1,6 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace MBT
@@ -7,7 +8,7 @@ namespace MBT
     [RequireComponent(typeof(MonoBehaviourTree))]
     public abstract class Node : MonoBehaviour
     {
-        public const float NODE_DEFAULT_WIDTH = 160f;
+        private const float NODE_DEFAULT_WIDTH = 160f;
 
         public string title;
         [HideInInspector]
@@ -16,22 +17,18 @@ namespace MBT
         public Node parent;
         [HideInInspector]
         public List<Node> children = new List<Node>();
-        [System.NonSerialized]
+        [NonSerialized]
         public Status status = Status.Ready;
         [HideInInspector]
         public MonoBehaviourTree behaviourTree;
         // [HideInInspector]
         public NodeResult runningNodeResult { get; internal set;}
         [HideInInspector]
-        public int runtimePriority = 0;
+        public int runtimePriority;
         [HideInInspector]
-        public bool breakpoint = false;
-        private bool _selected = false;
-        public bool selected
-        {
-            get { return _selected; }
-            set { _selected = value; }
-        }
+        public bool breakpoint;
+
+        public bool selected { get; set; }
 
         /// <summary>
         /// Time of last tick retrieved from Time.time
@@ -40,7 +37,7 @@ namespace MBT
         /// <summary>
         /// The interval in seconds from the last tick of behaviour tree.
         /// </summary>
-        public float DeltaTime => Time.time - behaviourTree.LastTick;
+        protected float DeltaTime => Time.time - behaviourTree.LastTick;
 
         public virtual void OnAllowInterrupt() {}
         public virtual void OnEnter() {}
@@ -65,28 +62,27 @@ namespace MBT
 
         public bool IsDescendantOf(Node node)
         {
-            if (this.parent == null) {
+            if (parent == null) {
                 return false;
-            } else if (this.parent == node) {
-                return true;
             }
-            return this.parent.IsDescendantOf(node);
+
+            return parent == node || parent.IsDescendantOf(node);
         }
 
         public List<Node> GetAllSuccessors()
         {
-            List<Node> result = new List<Node>();
-            for (int i = 0; i < children.Count; i++)
+            var result = new List<Node>();
+            foreach (var t in children)
             {
-                result.Add(children[i]);
-                result.AddRange(children[i].GetAllSuccessors());
+                result.Add(t);
+                result.AddRange(t.GetAllSuccessors());
             }
             return result;
         }
 
         public void SortChildren()
         {
-            this.children.Sort((c, d) => c.rect.x.CompareTo(d.rect.x));
+            children.Sort((c, d) => c.rect.x.CompareTo(d.rect.x));
         }
 
         /// <summary>
@@ -96,20 +92,12 @@ namespace MBT
         public virtual bool IsValid()
         {
             #if UNITY_EDITOR
-            System.Reflection.FieldInfo[] propertyInfos = this.GetType().GetFields();
-            for (int i = 0; i < propertyInfos.Length; i++)
+            var propertyInfos = GetType().GetFields();
+            return (from t in propertyInfos where t.FieldType.IsSubclassOf(typeof(BaseVariableReference)) select t.GetValue(this) as BaseVariableReference).All(varReference => varReference is not
             {
-                if (propertyInfos[i].FieldType.IsSubclassOf(typeof(BaseVariableReference)))
-                {
-                    BaseVariableReference varReference = propertyInfos[i].GetValue(this) as BaseVariableReference;
-                    if (varReference != null && varReference.isInvalid)
-                    {
-                        return false;
-                    }
-                }
-            }
-            #endif
-            return true;
+                isInvalid: true
+            });
+#endif
         }
     }
 
@@ -136,12 +124,12 @@ namespace MBT
 
         public static NodeResult From(Status s)
         {
-            switch (s)
+            return s switch
             {
-                case Status.Success: return success;
-                case Status.Failure: return failure;
-                default: return running;
-            }
+                Status.Success => success,
+                Status.Failure => failure,
+                _ => running
+            };
         }
 
         public static readonly NodeResult success = new NodeResult(Status.Success);

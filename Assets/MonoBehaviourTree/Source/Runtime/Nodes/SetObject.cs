@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -31,18 +29,20 @@ namespace MBT
         public override bool IsValid()
         {
             // Custom validation to allow nulls in source objects
-            switch (type)
+            return type switch
             {
-                case Type.Transform: return !( sourceTransform == null || IsInvalid(sourceTransform) || destinationTransform.isInvalid);
-                case Type.GameObject: return !( sourceGameObject == null || IsInvalid(sourceGameObject) || destinationGameObject.isInvalid);
-                default: return true;
-            }
+                Type.Transform => !(sourceTransform == null || IsInvalid(sourceTransform) ||
+                                    destinationTransform.isInvalid),
+                Type.GameObject => !(sourceGameObject == null || IsInvalid(sourceGameObject) ||
+                                     destinationGameObject.isInvalid),
+                _ => true
+            };
         }
 
         private static bool IsInvalid(BaseVariableReference variable)
         {
             // Custom validation to allow null objects without warnings
-            return (variable.isConstant)? false : variable.blackboard == null || string.IsNullOrEmpty(variable.key);
+            return (!variable.isConstant) && (variable.blackboard == null || string.IsNullOrEmpty(variable.key));
         }
 
         private enum Type

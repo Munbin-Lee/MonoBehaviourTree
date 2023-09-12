@@ -1,47 +1,38 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-namespace MBT
+﻿namespace MBT
 {
     public abstract class Condition : Decorator
     {
-        protected bool lastConditionCheckResult = false;
+        private bool lastConditionCheckResult;
 
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node == null) {
                 return NodeResult.failure;
             }
-            if (node.status == Status.Success || node.status == Status.Failure) {
+            if (node.status is Status.Success or Status.Failure) {
                 return NodeResult.From(node.status);
             }
             lastConditionCheckResult = Check();
-            if (lastConditionCheckResult == false) {
-                return NodeResult.failure;
-            }
-            return node.runningNodeResult;
+            return lastConditionCheckResult == false ? NodeResult.failure : node.runningNodeResult;
         }
 
         /// <summary>
         /// Reevaluate condition and try to abort the tree if required
         /// </summary>
-        /// <param name="abort">Abort type</param>
+        /// <param name="abortType">Abort type</param>
         protected void EvaluateConditionAndTryAbort(Abort abortType)
         {
-            bool c = Check();
-            if (c != lastConditionCheckResult)
-            {
-                lastConditionCheckResult = c;
-                TryAbort(abortType);
-            }
+            var c = Check();
+            if (c == lastConditionCheckResult) return;
+            lastConditionCheckResult = c;
+            TryAbort(abortType);
         }
 
         /// <summary>
         /// Method called to check condition
         /// </summary>
         /// <returns>Condition result</returns>
-        public abstract bool Check();
+        protected abstract bool Check();
     }
 }

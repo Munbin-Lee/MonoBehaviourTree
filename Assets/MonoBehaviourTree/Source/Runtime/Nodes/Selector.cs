@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -33,7 +31,7 @@ namespace MBT
         {
             while (index < children.Count)
             {
-                Node child = children[index];
+                var child = children[index];
                 switch (child.status)
                 {
                     case Status.Success:

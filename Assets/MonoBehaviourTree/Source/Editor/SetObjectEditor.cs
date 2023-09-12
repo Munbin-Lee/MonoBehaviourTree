@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using MBT;
 
@@ -9,17 +7,17 @@ namespace MBTEditor
     [CustomEditor(typeof(SetObject))]
     public class SetObjectEditor : Editor
     {
-        SerializedProperty titleProp;
-        SerializedProperty typeProp;
-        SerializedProperty sourceTransformProp;
-        SerializedProperty sourceGameObjectProp;
-        SerializedProperty destinationTransformProp;
-        SerializedProperty destinationGameObjectProp;
+        private SerializedProperty titleProp;
+        private SerializedProperty typeProp;
+        private SerializedProperty sourceTransformProp;
+        private SerializedProperty sourceGameObjectProp;
+        private SerializedProperty destinationTransformProp;
+        private SerializedProperty destinationGameObjectProp;
 
         private static readonly GUIContent destinationLabel = new GUIContent("Destination");
         private static readonly GUIContent sourceLabel = new GUIContent("Source");
 
-        void OnEnable()
+        private void OnEnable()
         {
             titleProp = serializedObject.FindProperty("title");
             typeProp = serializedObject.FindProperty("type");

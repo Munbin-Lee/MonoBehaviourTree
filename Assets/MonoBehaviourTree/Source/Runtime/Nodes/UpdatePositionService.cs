@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -11,9 +9,9 @@ namespace MBT
         public TransformReference sourceTransform;
         public Vector3Reference position = new Vector3Reference(VarRefMode.DisableConstant);
 
-        public override void Task()
+        protected override void Task()
         {
-            Transform t = sourceTransform.Value;
+            var t = sourceTransform.Value;
             if (t == null)
             {
                 return;

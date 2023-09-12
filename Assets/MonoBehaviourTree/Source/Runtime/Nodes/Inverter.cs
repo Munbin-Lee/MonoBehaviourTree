@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -10,16 +8,17 @@ namespace MBT
     {
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node == null) {
                 return NodeResult.failure;
             }
-            if (node.status == Status.Success) {
-                return NodeResult.failure;
-            } else if (node.status == Status.Failure) {
-                return NodeResult.success;
-            }
-            return node.runningNodeResult;
+
+            return node.status switch
+            {
+                Status.Success => NodeResult.failure,
+                Status.Failure => NodeResult.success,
+                _ => node.runningNodeResult
+            };
         }
     }
 }

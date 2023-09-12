@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using Unity.Profiling;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
-using Unity.Profiling;
 
 namespace MBT
 {
@@ -15,7 +15,7 @@ namespace MBT
 
         [HideInInspector]
         public Node selectedEditorNode;
-        public bool repeatOnFinish = false;
+        public bool repeatOnFinish;
         public int maxExecutionsPerTick = 1000;
         public MonoBehaviourTree parent;
         
@@ -26,10 +26,10 @@ namespace MBT
         private Root rootNode;
         private List<Node> executionStack;
         private List<Node> executionLog;
-        private List<Decorator> interruptingNodes = new List<Decorator>();
+        private readonly List<Decorator> interruptingNodes = new List<Decorator>();
         public float LastTick { get; private set; }
 
-        void Awake()
+        private void Awake()
         {
             rootNode = GetComponent<Root>();
             if (rootNode == null) {
@@ -37,11 +37,11 @@ namespace MBT
             }
             
             // Find master parent tree and all nodes
-            MonoBehaviourTree masterTree = this.GetMasterTree();
-            Node[] nodes = GetComponents<Node>();
+            var masterTree = GetMasterTree();
+            var nodes = GetComponents<Node>();
             if(masterTree == this)
             {
-                // Create lists with capicity
+                // Create lists with capacity
                 executionStack = new List<Node>(8);
                 executionLog = new List<Node>(nodes.Length);
                 // Set start node when tree is created first time
@@ -49,9 +49,8 @@ namespace MBT
                 executionLog.Add(rootNode);
             }
             // Initialize nodes of tree/subtree
-            for (int i = 0; i < nodes.Length; i++)
+            foreach (var n in nodes)
             {
-                Node n = nodes[i];
                 n.behaviourTree = masterTree;
                 n.runningNodeResult = new NodeResult(Status.Running, n);
             }
@@ -64,10 +63,10 @@ namespace MBT
             }
 
             // Find node with highest priority - closest to the root (the smallest number)
-            Decorator abortingNode = interruptingNodes[0];
-            for (int i = 1; i < interruptingNodes.Count; i++)
+            var abortingNode = interruptingNodes[0];
+            for (var i = 1; i < interruptingNodes.Count; i++)
             {
-                Decorator d = interruptingNodes[i];
+                var d = interruptingNodes[i];
                 if (d.runtimePriority < abortingNode.runtimePriority) {
                     abortingNode = d;
                 }
@@ -77,27 +76,29 @@ namespace MBT
             executionStack.Clear();
             executionStack.AddRange(abortingNode.GetStoredTreeSnapshot());
             // Restore flow of events in nodes after abort
-            for (int i = 0; i < executionStack.Count; i++)
+            foreach (var node in executionStack)
             {
-                Node node = executionStack[i];
-                if (node.status == Status.Running)
+                switch (node.status)
                 {
-                    // This node is still running and might need to restore the state
-                    node.OnBehaviourTreeAbort();
+                    case Status.Running:
+                        // This node is still running and might need to restore the state
+                        node.OnBehaviourTreeAbort();
+                        break;
+                    case Status.Success:
+                    case Status.Failure:
+                        // This node returned failure or success, so reenter it and call OnEnter
+                        node.OnEnter();
+                        break;
                 }
-                else if (node.status == Status.Success || node.status == Status.Failure)
-                {
-                    // This node returned failure or success, so reenter it and call OnEnter
-                    node.OnEnter();
-                }
+
                 // All nodes in execution stack should be in running state
                 node.status = Status.Running;
             }
             
-            int nodeIndex = abortingNode.runtimePriority - 1;
+            var nodeIndex = abortingNode.runtimePriority - 1;
             // Sanity check
             if (abortingNode != executionLog[nodeIndex]) {
-                Debug.LogWarning("Priority of node does not match with exectuion log");
+                Debug.LogWarning("Priority of node does not match with execution log");
             }
             // Abort nodes in log
             ResetNodesTo(abortingNode, true);
@@ -120,7 +121,7 @@ namespace MBT
             EvaluateInterruptions();
 
             // Max number of traversed nodes
-            int executionLimit = maxExecutionsPerTick;
+            var executionLimit = maxExecutionsPerTick;
             // Traverse tree
             while (executionStack.Count > 0)
             {
@@ -132,45 +133,45 @@ namespace MBT
                 executionLimit -= 1;
 
                 // Execute last element in stack
-                Node currentNode = executionStack[executionStack.Count - 1];
-                NodeResult nodeResult = currentNode.Execute();
+                var currentNode = executionStack[^1];
+                var nodeResult = currentNode.Execute();
                 // Set new status
                 currentNode.status = nodeResult.status;
                 if (nodeResult.status == Status.Running) {
                     // If node is running, then stop execution or continue children
-                    Node child = nodeResult.child;
+                    var child = nodeResult.child;
                     if (child == null) {
                         // Stop execution and continue next tick
                         LastTick = Time.time;
                         _TickMarker.End();
                         return;
-                    } else {
-                        // Add child to execution stack and execute it in next loop
-                        executionStack.Add(child);
-                        executionLog.Add(child);
-                        // IMPORTANT: Priority must be > 0 and assigned in this order
-                        child.runtimePriority = executionLog.Count;
-                        child.OnAllowInterrupt();
-                        child.OnEnter();
-                        #if UNITY_EDITOR
-                        // Stop execution if breakpoint is set on this node
-                        if (child.breakpoint)
-                        {
-                            Debug.Break();
-                            UnityEditor.Selection.activeGameObject = this.gameObject;
-                            Debug.Log("MBT Breakpoint: " + child.title, this);
-                            LastTick = Time.time;
-                            _TickMarker.End();
-                            return;
-                        }
-                        #endif
-                        continue;
                     }
-                } else {
-                    // Remove last node from stack and move up (closer to root)
-                    currentNode.OnExit();
-                    executionStack.RemoveAt(executionStack.Count - 1);
+
+                    // Add child to execution stack and execute it in next loop
+                    executionStack.Add(child);
+                    executionLog.Add(child);
+                    // IMPORTANT: Priority must be > 0 and assigned in this order
+                    child.runtimePriority = executionLog.Count;
+                    child.OnAllowInterrupt();
+                    child.OnEnter();
+#if UNITY_EDITOR
+                    // Stop execution if breakpoint is set on this node
+                    if (child.breakpoint)
+                    {
+                        Debug.Break();
+                        Selection.activeGameObject = gameObject;
+                        Debug.Log("MBT Breakpoint: " + child.title, this);
+                        LastTick = Time.time;
+                        _TickMarker.End();
+                        return;
+                    }
+#endif
+                    continue;
                 }
+
+                // Remove last node from stack and move up (closer to root)
+                currentNode.OnExit();
+                executionStack.RemoveAt(executionStack.Count - 1);
             }
             
             // Run this when execution stack is empty and BT should repeat
@@ -195,11 +196,11 @@ namespace MBT
 
         internal void ResetNodesTo(Node node, bool aborted = false)
         {
-            int i = executionLog.Count - 1;
+            var i = executionLog.Count - 1;
             // Reset status and get index of node
             while (i >= 0)
             {
-                Node n = executionLog[i];
+                var n = executionLog[i];
                 if (n == node) {
                     break;
                 }
@@ -222,9 +223,8 @@ namespace MBT
 
         private void ResetNodes()
         {
-            for (int i = 0; i < executionLog.Count; i++)
+            foreach (var node in executionLog)
             {
-                Node node = executionLog[i];
                 if (node.status == Status.Running)
                 {
                     node.OnExit();
@@ -239,7 +239,7 @@ namespace MBT
         /// <summary>
         /// Resets state to root node
         /// </summary>
-        public void Restart()
+        private void Restart()
         {
             ResetNodes();
             executionStack.Add(rootNode);
@@ -253,7 +253,7 @@ namespace MBT
             {
                 // Node should not change priority and position during runtime
                 // It means the array will be resized once during first call of this method
-                Array.Resize<Node>(ref stack, executionStack.Count);
+                Array.Resize(ref stack, executionStack.Count);
             }
 #if UNITY_EDITOR
             // Additional sanity check in case nodes are reordered or changed in editor
@@ -271,36 +271,30 @@ namespace MBT
             return rootNode;
         }
 
-        public MonoBehaviourTree GetMasterTree()
+        private MonoBehaviourTree GetMasterTree()
         {
-            if (parent == null)
-            {
-                return this;
-            }
-            return parent.GetMasterTree();
+            return parent == null ? this : parent.GetMasterTree();
         }
 
         #if UNITY_EDITOR
-        void OnValidate()
+        private void OnValidate()
         {
             if (maxExecutionsPerTick <= 0)
             {
                 maxExecutionsPerTick = 1;
             }
-            
-            if (parent != null)
+
+            if (parent == null) return;
+            if (parent == this)
             {
-                if (parent == this)
-                {
-                    parent = null;
-                    Debug.LogWarning("This tree cannot be its own parent.");
-                    return;
-                }
-                if (transform.parent == null || parent.gameObject != transform.parent.gameObject)
-                {
-                    // parent = null;
-                    Debug.LogWarning("Parent tree should be also parent of this gameobject.", this.gameObject);
-                }
+                parent = null;
+                Debug.LogWarning("This tree cannot be its own parent.");
+                return;
+            }
+            if (transform.parent == null || parent.gameObject != transform.parent.gameObject)
+            {
+                // parent = null;
+                Debug.LogWarning("Parent tree should be also parent of this gameObject.", gameObject);
             }
         }
         #endif

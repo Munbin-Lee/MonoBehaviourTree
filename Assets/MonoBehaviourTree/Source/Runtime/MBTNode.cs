@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System;
+﻿using System;
 
 namespace MBT
 { 
@@ -10,7 +7,7 @@ namespace MBT
     {
         public string name;
         public int order;
-        public string icon;
+        public readonly string icon;
 
         public MBTNode(string name = null, int order = 1000, string icon = null)
         {

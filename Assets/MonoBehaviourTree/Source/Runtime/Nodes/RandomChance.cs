@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -19,20 +17,17 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node == null) {
                 return NodeResult.failure;
             }
-            if (node.status == Status.Success || node.status == Status.Failure) {
+            if (node.status is Status.Success or Status.Failure) {
                 return NodeResult.From(node.status);
             }
-            if (roll > probability.Value) {
-                return NodeResult.failure;
-            }
-            return node.runningNodeResult;
+            return roll > probability.Value ? NodeResult.failure : node.runningNodeResult;
         }
 
-        void OnValidate()
+        private void OnValidate()
         {
             if (probability.isConstant)
             {

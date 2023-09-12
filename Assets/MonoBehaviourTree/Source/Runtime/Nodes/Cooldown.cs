@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -13,10 +10,10 @@ namespace MBT
         [Space]
         public FloatReference time = new FloatReference(1f);
         [Tooltip("When set to true, there will be no cooldown when child node returns failure")]
-        public bool resetOnChildFailure = false;
-        private float cooldownTime = 0f;
-        private bool entered = false;
-        private bool childFailed = false;
+        public bool resetOnChildFailure;
+        private float cooldownTime;
+        private bool entered;
+        private bool childFailed;
         
         public enum AbortTypes
         {
@@ -33,24 +30,24 @@ namespace MBT
 
         public override NodeResult Execute()
         {
-            Node node = GetChild();
+            var node = GetChild();
             if (node == null) {
                 return NodeResult.failure;
             }
-            if (node.status == Status.Success) {
-                return NodeResult.success;
+            switch (node.status)
+            {
+                case Status.Success:
+                    return NodeResult.success;
+                case Status.Failure:
+                    // If reset option is enabled flag will be raised and set true
+                    childFailed = resetOnChildFailure;
+                    return NodeResult.failure;
             }
-            if (node.status == Status.Failure) {
-                // If reset option is enabled flag will be raised and set true
-                childFailed = resetOnChildFailure;
-                return NodeResult.failure;
-            }
-            if (cooldownTime <= Time.time) {
-                entered = true;
-                return node.runningNodeResult;
-            } else {
-                return NodeResult.failure;
-            }
+
+            if (!(cooldownTime <= Time.time)) return NodeResult.failure;
+            entered = true;
+            return node.runningNodeResult;
+
         }
 
         public override void OnExit()
@@ -78,12 +75,10 @@ namespace MBT
 
         private void OnBehaviourTreeTick()
         {
-            if (cooldownTime <= Time.time)
-            {
-                // Task should be aborted, so there is no need to listen anymore
-                behaviourTree.onTick -= OnBehaviourTreeTick;
-                TryAbort(Abort.LowerPriority);
-            }
+            if (!(cooldownTime <= Time.time)) return;
+            // Task should be aborted, so there is no need to listen anymore
+            behaviourTree.onTick -= OnBehaviourTreeTick;
+            TryAbort(Abort.LowerPriority);
         }
     }
 }

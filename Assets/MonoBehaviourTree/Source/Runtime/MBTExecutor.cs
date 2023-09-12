@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MBT
 {
@@ -10,24 +8,22 @@ namespace MBT
     {
         public MonoBehaviourTree monoBehaviourTree;
 
-        void Reset()
+        private void Reset()
         {
             monoBehaviourTree = GetComponent<MonoBehaviourTree>();
             OnValidate();
         }
 
-        void Update()
+        private void Update()
         {
             monoBehaviourTree.Tick();
         }
 
-        void OnValidate()
+        private void OnValidate()
         {
-            if (monoBehaviourTree != null && monoBehaviourTree.parent != null)
-            {
-                monoBehaviourTree = null;
-                Debug.LogWarning("Subtree should not be target of update. Select parent tree instead.", this.gameObject);
-            }
+            if (monoBehaviourTree == null || monoBehaviourTree.parent == null) return;
+            monoBehaviourTree = null;
+            Debug.LogWarning("Subtree should not be target of update. Select parent tree instead.", this.gameObject);
         }
     }
 }

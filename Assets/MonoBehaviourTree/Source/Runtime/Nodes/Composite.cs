@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Collections.Generic;
 
 namespace MBT
 {
@@ -8,39 +6,33 @@ namespace MBT
     {
         private static readonly System.Random rng = new System.Random();
         
-        public bool random = false;
+        public bool random;
 
         public override void AddChild(Node node)
         {
-            if (!children.Contains(node))
-            {
-                // Remove parent in case there is one already
-                if (node.parent != null) {
-                    node.parent.RemoveChild(node);
-                }
-                children.Add(node);
-                node.parent = this;
+            if (children.Contains(node)) return;
+            // Remove parent in case there is one already
+            if (node.parent != null) {
+                node.parent.RemoveChild(node);
             }
+            children.Add(node);
+            node.parent = this;
         }
 
         public override void RemoveChild(Node node)
         {
-            if (children.Contains(node))
-            {
-                children.Remove(node);
-                node.parent = null;
-            }
+            if (!children.Contains(node)) return;
+            children.Remove(node);
+            node.parent = null;
         }
 
         protected static void ShuffleList<T>(List<T> list)
         {  
-            int n = list.Count;  
+            var n = list.Count;  
             while (n > 1) {
                 n--;
-                int k = rng.Next(n + 1);
-                T value = list[k];
-                list[k] = list[n];
-                list[n] = value;
+                var k = rng.Next(n + 1);
+                (list[k], list[n]) = (list[n], list[k]);
             }
         }
     }
